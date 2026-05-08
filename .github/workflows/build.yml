@@ -1,4 +1,4 @@
-name: Build RP2040 HID UF2
+name: Build RP2040 HID UF2.1
 
 on:
   push:
