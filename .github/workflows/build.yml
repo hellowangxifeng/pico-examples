@@ -1,0 +1,49 @@
+name: Build RP2040 HID UF2
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          cmake \
+          gcc-arm-none-eabi \
+          libnewlib-arm-none-eabi \
+          build-essential
+
+    - name: Clone pico-sdk
+      run: |
+        git clone https://github.com/raspberrypi/pico-sdk.git --depth=1
+        cd pico-sdk
+        git submodule update --init
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake ../pico-examples \
+          -DPICO_SDK_PATH=../pico-sdk
+
+    - name: Build HID Composite
+      run: |
+        cd build
+        make -j4 tinyusb_dev_hid_composite
+
+    - name: Upload UF2
+      uses: actions/upload-artifact@v4
+      with:
+        name: rp2040-hid-uf2
+        path: |
+          build/usb/device/dev_hid_composite/*.uf2
