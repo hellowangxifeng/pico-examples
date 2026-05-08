@@ -210,7 +210,13 @@ static void handle_command(char* line)
 int main(void)
 {
     board_init();
-    tusb_init();
+
+    // init TinyUSB device stack
+    tud_init(BOARD_TUD_RHPORT);
+
+    if (board_init_after_tusb) {
+        board_init_after_tusb();
+    }
 
     char line[128];
     int pos = 0;
@@ -239,4 +245,5 @@ int main(void)
     }
 
     return 0;
+}
 }
