@@ -9,45 +9,74 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout your fork repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          cmake \
-          gcc-arm-none-eabi \
-          libnewlib-arm-none-eabi \
-          build-essential \
-          git \
-          python3
+      - name: Show repo info
+        run: |
+          echo "Current directory:"
+          pwd
 
-    - name: Clone pico-sdk
-      run: |
-        git clone https://github.com/raspberrypi/pico-sdk.git --depth=1
-        cd pico-sdk
-        git submodule update --init --recursive
+          echo "Current branch:"
+          git branch --show-current
 
-    - name: Configure
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. -DPICO_SDK_PATH=../pico-sdk
+          echo "Current commit:"
+          git rev-parse HEAD
 
-    - name: Build modified dev_hid_composite
-      run: |
-        cd build
-        make dev_hid_composite -j4
+          echo "List dev_hid_composite files:"
+          ls -la usb/device/dev_hid_composite
 
-    - name: Find UF2
-      run: |
-        find build -name "*.uf2" -print
+      - name: Check edited source
+        run: |
+          echo "Search tusb_init:"
+          grep -R "tusb_init" -n usb/device/dev_hid_composite || true
 
-    - name: Upload UF2
-      uses: actions/upload-artifact@v4
-      with:
-        name: dev_hid_composite-uf2
-        path: build/usb/device/dev_hid_composite/*.uf2
+          echo "Search tud_init:"
+          grep -R "tud_init" -n usb/device/dev_hid_composite || true
+
+          echo "Last 40 lines of main.c:"
+          tail -n 40 usb/device/dev_hid_composite/main.c
+
+          echo "Check usb_descriptors.c CDC descriptor:"
+          grep -R "TUD_CDC_DESCRIPTOR" -n usb/device/dev_hid_composite || true
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            cmake \
+            gcc-arm-none-eabi \
+            libnewlib-arm-none-eabi \
+            build-essential \
+            git \
+            python3
+
+      - name: Clone Pico SDK
+        run: |
+          git clone https://github.com/raspberrypi/pico-sdk.git --depth=1
+          cd pico-sdk
+          git submodule update --init --recursive
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DPICO_SDK_PATH=../pico-sdk
+
+      - name: Build modified dev_hid_composite
+        run: |
+          cd build
+          make dev_hid_composite -j4
+
+      - name: Find generated UF2
+        run: |
+          echo "Generated UF2 files:"
+          find build -name "*.uf2" -print
+
+      - name: Upload UF2 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev_hid_composite-uf2
+          path: build/usb/device/dev_hid_composite/*.uf2
