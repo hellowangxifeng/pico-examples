@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -20,32 +21,33 @@ jobs:
           cmake \
           gcc-arm-none-eabi \
           libnewlib-arm-none-eabi \
-          build-essential
+          build-essential \
+          git \
+          python3
 
     - name: Clone pico-sdk
       run: |
         git clone https://github.com/raspberrypi/pico-sdk.git --depth=1
         cd pico-sdk
-        git submodule update --init
+        git submodule update --init --recursive
 
     - name: Configure
       run: |
-        mkdir build
+        mkdir -p build
         cd build
-        cmake .. \
-          -DPICO_SDK_PATH=../pico-sdk
+        cmake .. -DPICO_SDK_PATH=../pico-sdk
 
-    - name: Build HID Composite
+    - name: Build modified dev_hid_composite
       run: |
         cd build
-        make tinyusb_dev_hid_composite -j4
+        make dev_hid_composite -j4
 
     - name: Find UF2
       run: |
-        find build -name "*.uf2"
+        find build -name "*.uf2" -print
 
     - name: Upload UF2
       uses: actions/upload-artifact@v4
       with:
-        name: pico-uf2
-        path: build/**/*.uf2
+        name: dev_hid_composite-uf2
+        path: build/usb/device/dev_hid_composite/*.uf2
